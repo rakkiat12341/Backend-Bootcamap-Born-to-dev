@@ -47,8 +47,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
  *                     type: integer
  *                   name:
  *                     type: string
- *       500:
- *         description: Server error
+ *
  */
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM users";
@@ -64,6 +63,36 @@ app.get("/users", (req, res) => {
 });
 
 // Endpoint for insert data
+
+/**
+ * @swagger
+ * /users:
+ *   post:
+ *     summary: เพิ่มข้อมูล Users
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               age:
+ *                 type: integer
+ *               position:
+ *                 type: string
+ *             required:
+ *               - fullName
+ *               - age
+ *               - position
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *       400:
+ *         description: Invalid input
+ */
+
 app.post("/users", (req, res) => {
   const { fullName, age, position } = req.body;
 
