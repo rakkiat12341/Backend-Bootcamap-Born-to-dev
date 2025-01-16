@@ -26,6 +26,7 @@ app.use((err, req, res, next) => {
       status: err.status || 500,
     },
   });
+  next();
 });
 
 const db = mysql.createConnection({
@@ -123,7 +124,6 @@ app.post("/users", (req, res, next) => {
 
   // SQL query to insert data into the database
   const sql = "INSERT INTO users (fullName,age,position) VALUES (?,?,?)";
-
   //Execute the query for inserting data into database
   db.query(sql, [fullName, age, position], (err, result) => {
     if (err) {
@@ -161,7 +161,7 @@ app.delete("/users/:id", (req, res, next) => {
   const sql = "DELETE FROM users WHERE id = ?";
 
   if (!userId) {
-    const error = new Error("Required id");
+    const error = new Error("Required id for delete");
     error.status = 400;
     return next(error);
   }
@@ -220,7 +220,9 @@ app.put("/users/:id", (req, res, next) => {
     "UPDATE users SET fullName = ?, age = ?, position = ? WHERE id = ?";
 
   if (!userId || !fullName || !age || !position) {
-    const error = new Error("Invalid input");
+    const error = new Error(
+      "Invalid input data Plase fill all field for update"
+    );
     error.status = 400;
     return next(error);
   }
