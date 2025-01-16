@@ -10,6 +10,24 @@ dotenv.config();
 const app = express();
 app.use(bodyParser.json());
 
+// middleware for get time stamp when user did request about API , and time will show in console
+const timeStamp = function (req, res, next) {
+  console.log(`Time stamp: ${Date.now()}`);
+  next();
+};
+app.use(timeStamp);
+
+//midleware for handle error
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: {
+      message: err.message || "internal server error",
+      status: err.status || 500,
+    },
+  });
+});
+
 const db = mysql.createConnection({
   host: process.env.DB_HOST, // อ่านค่าจาก .env
   user: process.env.DB_USER,
@@ -25,6 +43,7 @@ db.connect((err) => {
   console.log("Connected to database");
 });
 
+// Endpoint for API documentation Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Endpoint for get all data
@@ -63,7 +82,6 @@ app.get("/users", (req, res) => {
 });
 
 // Endpoint for insert data
-
 /**
  * @swagger
  * /users:
@@ -93,8 +111,15 @@ app.get("/users", (req, res) => {
  *         description: Invalid input
  */
 
-app.post("/users", (req, res) => {
+app.post("/users", (req, res, next) => {
   const { fullName, age, position } = req.body;
+
+  //Error handling
+  if (!fullName || !age || !position) {
+    const error = new Error("Invalid input data Plase fill all field");
+    error.status = 400;
+    return next(error);
+  }
 
   // SQL query to insert data into the database
   const sql = "INSERT INTO users (fullName,age,position) VALUES (?,?,?)";
@@ -107,6 +132,106 @@ app.post("/users", (req, res) => {
       return;
     }
     res.status(201).send("User added successfully");
+  });
+});
+
+// Endpoint for delete data
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: ลบข้อมูล users ด้วย id
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: ID of the user to delete
+ *         schema:
+ *           type: integer  
+
+ *     responses:
+ *       200: 
+ *          description: User deleted successfully
+ *       500:
+ *          description: Server error
+ */
+
+app.delete("/users/:id", (req, res, next) => {
+  const userId = req.params.id;
+  const sql = "DELETE FROM users WHERE id = ?";
+
+  if (!userId) {
+    const error = new Error("Required id");
+    error.status = 400;
+    return next(error);
+  }
+
+  db.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.log("Error: ", err);
+      res.status(500).send("Error: " + err);
+      return;
+    }
+    res.status(200).send(`User deleted successfully  with ID: ${userId}`);
+  });
+});
+
+// Endpoint for update data
+/**
+ * @swagger
+ * /users/{id}:
+ *   put:
+ *     summary: เเก้ไข้อมูล Users
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: ID of the user to update
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               age:
+ *                 type: integer
+ *               position:
+ *                 type: string
+ *             required:
+ *               - fullName
+ *               - age
+ *               - position
+ *     responses:
+ *       201:
+ *         description: User updated successfully
+ *       400:
+ *         description: Invalid input
+ */
+
+app.put("/users/:id", (req, res, next) => {
+  const userId = Number(req.params.id);
+  const { fullName, age, position } = req.body;
+  const sql =
+    "UPDATE users SET fullName = ?, age = ?, position = ? WHERE id = ?";
+
+  if (!userId || !fullName || !age || !position) {
+    const error = new Error("Invalid input");
+    error.status = 400;
+    return next(error);
+  }
+
+  db.query(sql, [fullName, age, position, userId], (err, result) => {
+    if (err) {
+      console.log("Error: ", err);
+      res.status(500).send("Error: " + err);
+      return;
+    }
+    res.status(200).send(`User updated successfully  with ID: ${userId}`);
   });
 });
 
