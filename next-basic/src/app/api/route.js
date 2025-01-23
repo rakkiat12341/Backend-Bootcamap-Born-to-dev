@@ -1,5 +1,5 @@
 export async function GET() {
-  console.log("Hello API");
+  console.log("This message from API");
 
-  return Response.json({ message: "Hello API" });
+  return Response.json({ message: "Thiserer message from API" });
 }
